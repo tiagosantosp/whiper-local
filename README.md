@@ -1,26 +1,26 @@
 # whiper-local
 
-Ditado por voz para Windows: carregas numa hotkey, falas, e o texto transcrito aparece onde estiver o cursor, em qualquer aplicação.
+Ditado por voz para Windows: você aperta uma hotkey, fala, e o texto transcrito aparece onde estiver o cursor, em qualquer aplicativo.
 
-A gravação é feita localmente. A transcrição é feita na nuvem com Whisper, pela API da **Groq** (por defeito, rápida e barata) ou da **OpenAI**. A app corre em segundo plano com um ícone na barra de sistema que mostra o estado atual.
+A gravação é feita localmente. A transcrição é feita na nuvem com Whisper, pela API da **Groq** (padrão, rápida e barata) ou da **OpenAI**. O app roda em segundo plano com um ícone na bandeja do sistema que mostra o estado atual.
 
 ## Funcionalidades
 
 - **Hotkey global** configurável (ex.: `ctrl+shift+space`, `f13`)
 - **Dois modos de gravação**
-  - `ptt` (push-to-talk): grava enquanto a hotkey estiver premida e transcreve quando a largas
-  - `toggle`: premes uma vez para começar e outra vez para parar
+  - `ptt` (push-to-talk): grava enquanto a hotkey estiver pressionada e transcreve quando você solta
+  - `toggle`: aperta uma vez para começar e outra vez para parar
 - **Dois modos de saída**
-  - `paste`: cola o texto na janela ativa (simula `Ctrl+V`) e depois repõe o conteúdo anterior do clipboard
-  - `clipboard_only`: só copia o texto para o clipboard
-- **Feedback sonoro**: um bip agudo quando começa a gravar e um grave quando para
-- **Ícone na barra de sistema** com a cor do estado:
+  - `paste`: cola o texto na janela ativa (simula `Ctrl+V`) e depois restaura o conteúdo anterior da área de transferência
+  - `clipboard_only`: só copia o texto para a área de transferência
+- **Feedback sonoro**: um bipe agudo quando começa a gravar e um grave quando para
+- **Ícone na bandeja do sistema** com a cor do estado:
 
   | Cor | Estado |
   |---|---|
   | 🔵 Azul | Pronto |
-  | 🔴 Vermelho | A gravar |
-  | 🟠 Laranja | A transcrever |
+  | 🔴 Vermelho | Gravando |
+  | 🟠 Laranja | Transcrevendo |
   | 🟤 Vermelho escuro | Erro |
 
 ## Requisitos
@@ -43,18 +43,18 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-Depois edita o `.env` e coloca a tua API key.
+Depois edite o `.env` e coloque a sua API key.
 
 ## Configuração
 
-Toda a configuração fica no ficheiro `.env`:
+Toda a configuração fica no arquivo `.env`:
 
 | Variável | Valores | Padrão | Descrição |
 |---|---|---|---|
 | `API_PROVIDER` | `groq`, `openai` | `groq` | Serviço de transcrição |
-| `API_KEY` | — | **obrigatória** | Chave da API do provider |
+| `API_KEY` | — | **obrigatória** | Chave da API do provedor |
 | `MODEL` | Groq: `whisper-large-v3-turbo`, `whisper-large-v3`. OpenAI: `whisper-1` | **obrigatório** | Modelo Whisper |
-| `HOTKEY` | Qualquer combinação aceite pela lib [`keyboard`](https://github.com/boppreh/keyboard) | **obrigatória** | Atalho para gravar |
+| `HOTKEY` | Qualquer combinação aceita pela lib [`keyboard`](https://github.com/boppreh/keyboard) | **obrigatória** | Atalho para gravar |
 | `HOTKEY_MODE` | `ptt`, `toggle` | `ptt` | Modo de gravação |
 | `OUTPUT_MODE` | `paste`, `clipboard_only` | `paste` | O que fazer com o texto |
 
@@ -69,11 +69,11 @@ HOTKEY_MODE=ptt
 OUTPUT_MODE=paste
 ```
 
-Se faltar alguma variável ou um valor for inválido, a app termina logo ao arrancar e indica qual é o problema.
+Se faltar alguma variável ou algum valor for inválido, o app encerra logo na inicialização e informa qual é o problema.
 
-## Utilização
+## Uso
 
-### Com consola (útil para ver logs)
+### Com console (útil para ver os logs)
 
 ```powershell
 .venv\Scripts\python.exe main.py
@@ -81,15 +81,15 @@ Se faltar alguma variável ou um valor for inválido, a app termina logo ao arra
 
 ### Em segundo plano, sem janela
 
-Faz duplo clique em `start.vbs`. Corre a app com `pythonw.exe`, por isso não abre nenhuma consola.
+Dê um duplo clique no `start.vbs`. Ele roda o app com `pythonw.exe`, então nenhum console é aberto.
 
-> ⚠️ O `start.vbs` tem o caminho `C:\DEV\whiper-local` escrito no código. Se o projeto estiver noutra pasta, altera esse caminho.
+> ⚠️ O `start.vbs` tem o caminho `C:\DEV\whiper-local` fixo no código. Se o projeto estiver em outra pasta, altere esse caminho.
 
-Para iniciar com o Windows, cria um atalho para o `start.vbs` em `shell:startup` (Win+R → `shell:startup`).
+Para iniciar junto com o Windows, crie um atalho para o `start.vbs` em `shell:startup` (Win+R → `shell:startup`).
 
 ### Sair
 
-Clica com o botão direito no ícone da barra de sistema e escolhe **Exit**.
+Clique com o botão direito no ícone da bandeja do sistema e escolha **Exit**.
 
 ## Como funciona
 
@@ -102,26 +102,26 @@ Hotkey ──► Recorder ──► Transcriber ──► OutputHandler
                  └──► TrayIcon (estado: pronto/gravando/transcrevendo/erro)
 ```
 
-| Ficheiro | Responsabilidade |
+| Arquivo | Responsabilidade |
 |---|---|
-| [main.py](main.py) | Arranque: carrega a config, liga os componentes e inicia o ícone da bandeja |
+| [main.py](main.py) | Inicialização: carrega a config, conecta os componentes e inicia o ícone da bandeja |
 | [src/config.py](src/config.py) | Lê e valida o `.env` e define o `base_url` da Groq |
-| [src/hotkeys.py](src/hotkeys.py) | Regista a hotkey, controla o ciclo gravar → transcrever → enviar e toca os bips |
-| [src/recorder.py](src/recorder.py) | Captura áudio do microfone (16 kHz, mono, int16) e devolve-o em WAV |
+| [src/hotkeys.py](src/hotkeys.py) | Registra a hotkey, controla o ciclo gravar → transcrever → enviar e toca os bipes |
+| [src/recorder.py](src/recorder.py) | Captura o áudio do microfone (16 kHz, mono, int16) e devolve em WAV |
 | [src/transcriber.py](src/transcriber.py) | Envia o WAV para a API de transcrição (cliente `openai`, compatível com a Groq) |
-| [src/output.py](src/output.py) | Cola o texto na janela ativa ou só o copia para o clipboard |
-| [src/tray.py](src/tray.py) | Ícone da barra de sistema com a cor de cada estado e o menu de saída |
+| [src/output.py](src/output.py) | Cola o texto na janela ativa ou só copia para a área de transferência |
+| [src/tray.py](src/tray.py) | Ícone da bandeja do sistema com a cor de cada estado e o menu de saída |
 
-A transcrição corre numa thread separada para não bloquear a hotkey.
+A transcrição roda em uma thread separada para não travar a hotkey.
 
-## Limitações e notas
+## Limitações e observações
 
-- **A transcrição não é local.** Apesar do nome, o áudio é enviado para a Groq ou para a OpenAI. Cada pedido conta para a tua quota da API.
-- **O idioma está fixo em português** (`language="pt"` em [src/transcriber.py](src/transcriber.py)). Para outro idioma, altera esse valor.
+- **A transcrição não é local.** Apesar do nome, o áudio é enviado para a Groq ou para a OpenAI. Cada requisição conta na sua cota da API.
+- **O idioma está fixo em português** (`language="pt"` em [src/transcriber.py](src/transcriber.py)). Para outro idioma, altere esse valor.
 - **Só funciona no Windows**, por causa do `winsound` e do comportamento da lib `keyboard`.
-- **Apps a correr como administrador:** a lib `keyboard` pode não apanhar a hotkey nem colar texto nessas janelas, a não ser que o whiper-local também corra como administrador.
-- **Modo `ptt` com combinações:** a gravação para quando largas a *última* tecla da combinação (ex.: `space` em `ctrl+shift+space`).
-- A hotkey é suprimida (`suppress=True`), por isso a combinação deixa de chegar às outras aplicações enquanto a app estiver a correr.
+- **Apps rodando como administrador:** a lib `keyboard` pode não capturar a hotkey nem colar texto nessas janelas, a menos que o whiper-local também rode como administrador.
+- **Modo `ptt` com combinações:** a gravação para quando você solta a *última* tecla da combinação (ex.: `space` em `ctrl+shift+space`).
+- A hotkey é suprimida (`suppress=True`), então a combinação não chega aos outros aplicativos enquanto o app estiver rodando.
 
 ## Licença
 
